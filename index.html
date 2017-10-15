@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Tuition Changes</title>
+        <script src="https://d3js.org/d3.v4.js"></script>
+		<script src="https://d3js.org/d3-scale-chromatic.v1.js"></script>
+		<script src="functions.js"></script>
+		
+    </head>
+    <body>
+        <script type="text/javascript">
+			if (typeof window.minYear !== 'undefined' && typeof window.maxYear !== 'undefined') 
+			{				
+				// Slider variables  
+				var sliderYears = [],
+					schoolYears = [];
+				
+				for (var i = window.minYear; i <= window.maxYear; i++) 
+				{
+					sliderYears.push(i);
+					schoolYears.push(i + '-' + (i + 1));
+				}	
+				
+				var initialYear = window.minYear;
+			} else 
+			{
+				var initialYear = 2000;
+				window.minYear = 2000;
+				window.maxYear = 2015;
+			}
+			
+			// Define variables
+			var margin = {top: 50, right: 10, bottom: 20, left: 10},
+			    pageWidth = 1000 - margin.left - margin.right,
+			    pageHeight = 550 - margin.top - margin.bottom,
+				projection = d3.geoAlbersUsa()
+                               .translate([pageWidth/2, pageHeight/2]);
+                path = d3.geoPath()
+                         .projection(projection),
+				headline = "In-State Tuition in the Year ";	  
+			
+			// Slider
+			// from http://bl.ocks.org/tomschulze/961d57bd1bbd2a9ef993f2e8645cb8d2
+			d3.select("body")
+			  .insert("p", ":first-child")
+			  .append("input")
+			  .attr("type", "range")
+			  .attr("min", window.minYear)
+			  .attr("max", window.maxYear)
+			  .attr("value", initialYear)
+			  .attr("id", "year");	
+			
+			// header text for slider 
+			d3.select("body")
+			  .insert("h2", ":first-child")
+			  .text(headline + initialYear);
+			
+			// declare SVG
+			var svg = d3.select("body")
+					    .append("svg")
+					    .attr("width", pageWidth + margin.left + margin.right)
+					    .attr("height", pageHeight + margin.top + margin.bottom);
+			
+			// read in GeoJSON data for states, found at 
+			// https://raw.githubusercontent.com/alignedleft/d3-book/master/chapter_14/us-states.json
+			d3.json("us-states.json", function(json) 
+			{
+				//Bind data and create one path per GeoJSON feature
+				svg.selectAll("path")
+				   .data(json.features)
+				   .enter()
+				   .append("path")
+				   .attr("d", path)
+				   .style("fill", "#ADD8E6")
+				   .style("stroke", "black")
+				   .style("stroke-width", "1");
+			}
+			);
+			
+			// read in .csv file. Cleaned-up version of files found at 			
+            d3.csv("FINAL_DATA_W_SCHOOL_INFO.csv", function(data)
+			{
+				// Create list of tuition values 
+				var tuition = [];
+				data.map(function(d){tuition.push(d.TUITIONFEE_IN);});
+				
+				var colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
+				                   .domain([d3.max(tuition), d3.min(tuition)]);
+				
+				var years = [];
+				data.map(function(d){years.push(d.SCHOOL_YEAR);});
+				
+				// define global variables 
+				window.minYear = d3.min(years);
+				window.maxYear = d3.max(years);
+				
+				// circles 
+				svg.selectAll("circle")
+				   .data(data)
+				   .enter()
+				   .append("circle")
+				   .attr("cx", function(d) {return projection([d.LONGITUDE, d.LATITUDE])[0];})
+				   .attr("cy", function(d) {return projection([d.LONGITUDE, d.LATITUDE])[1];})
+				   .attr("r", 5)
+				   .style("fill", function(d){return colorScale(d.TUITIONFEE_IN);})
+				   .style("stroke", "gray")
+				   .style("stroke-width", 0.25)
+				   .style("opacity", 0.75);
+				   
+				 // was the slider used?
+				d3.select("#year").on("input", function() {
+					updateHeadline();
+				});
+				 
+			}
+			);			
+        </script>
+    </body>
+</html>
