@@ -5,37 +5,31 @@
         <title>Tuition Changes</title>
         <script src="https://d3js.org/d3.v4.js"></script>
 		<script src="https://d3js.org/d3-scale-chromatic.v1.js"></script>
+		<script src="https://d3js.org/d3-color.v1.js"></script>
+		<script src="https://d3js.org/d3-interpolate.v1.js"></script>
+		<script src="https://d3js.org/d3-scale-chromatic.v1.js"></script>
 		<script src="functions.js"></script>
-		
+		<link rel="stylesheet" href="stylesheet.css">
     </head>
     <body>
+		<div id="tooltip" class="hidden">
+			<p id="instname"><strong>Institution Name</strong></p>
+			<p id="location">City, State Zip</p>
+			<p id="schoolyear">School Year</p>
+			<p id="tuition">Tuition Amount</p>
+		</div>
         <script type="text/javascript">
-			if (typeof window.minYear !== 'undefined' && typeof window.maxYear !== 'undefined') 
-			{				
-				// Slider variables  
-				var sliderYears = [],
-					schoolYears = [];
-				
-				for (var i = window.minYear; i <= window.maxYear; i++) 
-				{
-					sliderYears.push(i);
-					schoolYears.push(i + '-' + (i + 1));
-				}	
-				
-				var initialYear = window.minYear;
-			} else 
-			{
-				var initialYear = 2000;
-				window.minYear = 2000;
-				window.maxYear = 2015;
-			}
+			var initialYear = 2000;
+			window.minYear = 2000;
+			window.maxYear = 2015;
 			
 			// Define variables
-			var margin = {top: 50, right: 10, bottom: 20, left: 10},
-			    pageWidth = 1000 - margin.left - margin.right,
-			    pageHeight = 550 - margin.top - margin.bottom,
+			var margin = {top: 250, right: 20, bottom: 0, left: 200},
+			    pageWidth = 3700 - margin.left - margin.right,
+			    pageHeight = 2333 - margin.top - margin.bottom,
 				projection = d3.geoAlbersUsa()
-                               .translate([pageWidth/2, pageHeight/2]);
+				               .scale(5000)
+                               .translate([1833, 1166]);
                 path = d3.geoPath()
                          .projection(projection),
 				headline = "In-State Tuition in the Year ";	  
@@ -54,7 +48,7 @@
 			// header text for slider 
 			d3.select("body")
 			  .insert("h2", ":first-child")
-			  .text(headline + initialYear);
+			  .text(headline + initialYear + "-" + (parseInt(initialYear) + 1));
 			
 			// declare SVG
 			var svg = d3.select("body")
@@ -79,7 +73,9 @@
 			);
 			
 			// read in .csv file. Cleaned-up version of files found at 			
-            d3.csv("FINAL_DATA_W_SCHOOL_INFO.csv", function(data)
+            var readCsv = function(YEAR) 
+			{ 
+			d3.csv("FINAL_DATA_W_SCHOOL_INFO.csv", function(data)
 			{
 				// Create list of tuition values 
 				var tuition = [];
@@ -100,21 +96,50 @@
 				   .data(data)
 				   .enter()
 				   .append("circle")
+				   .filter(function(d){return d.SCHOOL_YEAR == YEAR;})
 				   .attr("cx", function(d) {return projection([d.LONGITUDE, d.LATITUDE])[0];})
 				   .attr("cy", function(d) {return projection([d.LONGITUDE, d.LATITUDE])[1];})
 				   .attr("r", 5)
 				   .style("fill", function(d){return colorScale(d.TUITIONFEE_IN);})
 				   .style("stroke", "gray")
 				   .style("stroke-width", 0.25)
-				   .style("opacity", 0.75);
-				   
-				 // was the slider used?
-				d3.select("#year").on("input", function() {
-					updateHeadline();
-				});
+				   .style("opacity", 0.75)
+				   .on("mouseover", function(d) 
+				   {
+						// interactive tooltip
+						d3.select("#tooltip")
+						  .style("left", projection([d.LONGITUDE, d.LATITUDE])[0] + "px")
+					      .style("top", projection([d.LONGITUDE, d.LATITUDE])[1] + "px")
+                          .select("#instname")
+                          .text(d.INSTNM)
+					    d3.select("#tooltip")
+						  .select("#location")
+						  .text(d.CITY + ", " + d.STABBR + " " + d.ZIP)
+						d3.select("#tooltip")
+						  .select("#schoolyear")
+						  .text(d.SCHOOL_YEAR + "-" + (parseInt(d.SCHOOL_YEAR) + 1))
+                        d3.select("#tooltip")
+						  .select("#tuition")
+                          .text("$" + d.TUITIONFEE_IN);
+						d3.select("#tooltip").classed("hidden", false);
+				   }
+				   )
+				   .on("mouseout", function()
+				   {
+						d3.select("#tooltip").classed("hidden", true);
+				   });
 				 
 			}
-			);			
+			)
+			};
+			
+			readCsv(initialYear);
+			
+			// was the slider used?
+			d3.select("#year").on("input", function() {
+				updateHeadline();
+				updateCircles();
+			});
         </script>
     </body>
 </html>
