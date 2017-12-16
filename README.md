@@ -6,4 +6,4 @@ from 2000-2016.
 This visual still needs to be refined. Namely, I will be working on building in zoom functionality so that the whole map does
 not need to be shown. 
 
-You may view this visualization at https://bl.ocks.org/millerchangym/94442bc2a698569a18f9f8e9fde7f0ae.
+You may view this visualization at https://bl.ocks.org/millerchangym/94442bc2a698569a18f9f8e9fde7f0ae and by clicking "Open."
